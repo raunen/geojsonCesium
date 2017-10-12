@@ -1,0 +1,98 @@
+<html>
+<head>
+<!-- Importar biblioteca Cesium -->
+<script src="Build/Cesium/Cesium.js"></script>
+<style>
+@import url("Build/Cesium/Widgets/widgets.css");
+
+</style>
+</head>
+<body>
+
+<div id="cesiumContainer">
+
+</div>
+
+<script>
+	
+var viewer = new Cesium.Viewer('cesiumContainer',{
+    
+    selectionIndicator : true,
+    infoBox:true
+});
+var entity = viewer.entities.add({
+	//Cartesian3 representa un punto en el espacio euclidiano
+	//Cesium.Cartesian3.fromDegrees(longitude, latitude, height, ellipsoid, result)
+	position : Cesium.Cartesian3.fromDegrees(-74.17300343513489,4.612721588404768,0),
+   model : {
+   	uri : 'cilindro.gltf',
+        scale:1
+     // minimumPixelSize : 128
+   }, 
+   label : {
+            show : false,
+            showBackground : true,
+            font : '14px monospace',
+            //horizontalOrigin : Cesium.HorizontalOrigin.LEFT,
+            //verticalOrigin : Cesium.VerticalOrigin.BASELINE,
+        }
+   
+});
+
+//Zoom a la entidad
+        viewer.zoomTo(entity, new Cesium.HeadingPitchRange(Math.PI / 4, -Math.PI / 4, 3));
+
+        var scene = viewer.scene;
+
+
+        //Change color on mouse over.  This relies on the fact that given a primitive,
+        //you can retrieve an associted en
+        var lastColor;
+        var lastPick;
+        var handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+
+
+
+        //Desplegar informacion al hacer click sobre alguna de las entidades
+        handler.setInputAction(function(click) {
+            var alertText = '';
+            function addToMessage(key, value) {
+                alertText += key + ': ' + value + '\n';
+            }
+
+            //Se crea una variable para cada entidad
+
+            var pickedObject = scene.pick(click.position);
+            if (Cesium.defined(pickedObject) && (pickedObject.id === entity)) {
+                addToMessage('Objeto', pickedObject.id.id);
+                var position = viewer.camera.pickEllipsoid(click.position);
+                addToMessage('Posición X', click.position.x);
+                addToMessage('Posición Y', click.position.y);
+                var cartographicPosition = Cesium.Ellipsoid.WGS84.cartesianToCartographic(position);
+                addToMessage('Longitud', Cesium.Math.toDegrees(cartographicPosition.longitude));
+                addToMessage('Latitud', Cesium.Math.toDegrees(cartographicPosition.latitude));
+                terrainSamplePositions = [cartographicPosition];
+        
+                entity.label.eyeOffset= new Cesium.Cartesian3(0,20,0);
+                entity.label.show = true;
+                entity.label.text = alertText;
+            }else{
+                entity.label.show = false;
+            }
+
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+
+        //Ability to look up the Model associated with an entity
+        function getModelForEntity(entity) {
+            var primitives = viewer.scene.primitives;
+            for (var i = 0; i < primitives.length; i++) {
+                var primitive = primitives.get(i);
+                if (primitive instanceof Cesium.Model && primitive.id === entity) {
+                    return primitive;
+                }
+            }
+        };
+        </script>
+    </body>
+</html>
